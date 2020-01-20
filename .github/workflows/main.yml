@@ -1,0 +1,117 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        thing:
+        - stable
+        - macos-x86_64
+        - aarch64-linux
+        - x86_64-msvc
+        include:
+        - thing: stable
+          target: x86_64-unknown-linux-gnu
+          rust: stable
+          os: ubuntu-latest
+        - thing: macos-x86_64
+          target: x86_64-apple-darwin
+          rust: stable
+          os: macos-latest
+        - thing: aarch64-linux
+          target: aarch64-unknown-linux-gnu
+          rust: stable
+          os: ubuntu-latest
+        - thing: x86_64-msvc
+          target: x86_64-pc-windows-msvc
+          rust: stable-x86_64-msvc
+          os: windows-latest
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Install Rust (rustup)
+      if: matrix.os != 'macos-latest'
+      run: rustup update ${{ matrix.rust }} --no-self-update && rustup default ${{ matrix.rust }}
+      shell: bash
+    - name: Install Rust (macos)
+      if: matrix.os == 'macos-latest'
+      run: |
+        curl https://sh.rustup.rs | sh -s -- -y
+        echo ::add-path::$HOME/.cargo/bin
+      shell: bash
+    - name: Install GCC (aarch64-linux)
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+      if: matrix.thing == 'aarch64-linux'
+      shell: bash
+    - run: rustup target add ${{ matrix.target }}
+    - name: Build
+      run: |
+        cargo build --manifest-path testcrate/Cargo.toml --target ${{ matrix.target }} --release
+      shell: bash
+
+  test_linux:
+    name: Test on Linux
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Install Rust
+      run: rustup update stable --no-self-update && rustup default stable
+      shell: bash
+    - name: Run tests
+      run: |
+        cargo test --manifest-path testcrate/Cargo.toml --release
+      shell: bash
+
+  test_macos:
+    name: Test on MacOS
+    runs-on: macos-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Install Rust
+      run: |
+        curl https://sh.rustup.rs | sh -s -- -y
+        echo ::add-path::$HOME/.cargo/bin
+      shell: bash
+    - name: Run tests
+      run: |
+        cargo test --manifest-path testcrate/Cargo.toml --release
+      shell: bash
+
+  test_windows:
+    name: Test on Windows
+    runs-on: windows-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Install Rust
+      run: rustup update stable --no-self-update && rustup default stable
+      shell: bash
+    - name: Run tests
+      run: |
+        cargo test --manifest-path testcrate/Cargo.toml --release
+      shell: bash
+
+  rustfmt:
+    name: Rustfmt
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Install Rust
+      run: rustup update stable && rustup default stable && rustup component add rustfmt
+    - run: cargo fmt -- --check
