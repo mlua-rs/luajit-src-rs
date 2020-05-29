@@ -1,6 +1,6 @@
 [package]
 name = "luajit-src"
-version = "210.0.0+694d69a"
+version = "210.1.0+resty31116c4"
 authors = ["Aleksandr Orlenko <zxteam@protonmail.com>"]
 edition = "2018"
 repository = "https://github.com/khvzak/luajit-src-rs"
@@ -8,7 +8,7 @@ keywords = ["lua", "luajit"]
 readme = "README.md"
 license = "MIT"
 description = """
-Sources of LuaJIT and logic to build it.
+Sources of LuaJIT 2.1 (OpenResty's branch) and logic to build it.
 """
 
 [dependencies]
