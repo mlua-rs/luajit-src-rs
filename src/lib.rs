@@ -61,7 +61,7 @@ impl Build {
         let target = &self.target.as_ref().expect("TARGET not set")[..];
         let host = &self.host.as_ref().expect("HOST not set")[..];
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR not set");
-        let source_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("luajit");
+        let source_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("luajit2");
         let build_dir = out_dir.join("build");
         let lib_dir = out_dir.join("lib");
         let include_dir = out_dir.join("include");
@@ -119,7 +119,7 @@ impl Build {
     pub fn build_msvc(&mut self) -> Artifacts {
         let target = &self.target.as_ref().expect("TARGET not set")[..];
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR not set");
-        let source_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("luajit");
+        let source_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("luajit2");
         let build_dir = out_dir.join("build");
         let lib_dir = out_dir.join("lib");
         let include_dir = out_dir.join("include");
