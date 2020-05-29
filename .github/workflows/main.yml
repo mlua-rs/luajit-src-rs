@@ -10,6 +10,7 @@ jobs:
         target:
         - x86_64-unknown-linux-gnu
         - aarch64-unknown-linux-gnu
+        - mips64el-unknown-linux-gnuabi64
         - x86_64-apple-darwin
         - x86_64-pc-windows-msvc
         rust: [stable]
@@ -17,6 +18,8 @@ jobs:
         - target: x86_64-unknown-linux-gnu
           os: ubuntu-18.04
         - target: aarch64-unknown-linux-gnu
+          os: ubuntu-18.04
+        - target: mips64el-unknown-linux-gnuabi64
           os: ubuntu-18.04
         - target: x86_64-apple-darwin
           os: macos-latest
@@ -36,6 +39,12 @@ jobs:
       run: |
         sudo apt-get update -y
         sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+      shell: bash
+    - name: Install GCC (mips64el-unknown-linux-gnuabi64)
+      if: ${{ matrix.target == 'mips64el-unknown-linux-gnuabi64' }}
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y --no-install-recommends gcc-mips64el-linux-gnuabi64 libc6-dev-mips64el-cross
       shell: bash
     - name: Build ${{ matrix.lua }}
       run: |
