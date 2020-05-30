@@ -16,6 +16,7 @@ pub struct Artifacts {
 }
 
 impl Build {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Build {
         Build {
             out_dir: env::var_os("OUT_DIR").map(|s| PathBuf::from(s).join("luajit-build")),
@@ -68,9 +69,11 @@ impl Build {
 
         for dir in &[&build_dir, &lib_dir, &include_dir] {
             if dir.exists() {
-                fs::remove_dir_all(dir).expect(&format!("cannot remove {}", dir.display()));
+                fs::remove_dir_all(dir)
+                    .unwrap_or_else(|e| panic!("cannot remove {}: {}", dir.display(), e));
             }
-            fs::create_dir_all(dir).expect(&format!("cannot create {}", dir.display()));
+            fs::create_dir_all(dir)
+                .unwrap_or_else(|e| panic!("cannot create {}: {}", dir.display(), e));
         }
         cp_r(&source_dir, &build_dir);
 
@@ -110,8 +113,8 @@ impl Build {
         .unwrap();
 
         Artifacts {
-            lib_dir: lib_dir,
-            include_dir: include_dir,
+            lib_dir,
+            include_dir,
             libs: vec!["luajit-5.1".to_string()],
         }
     }
@@ -126,9 +129,11 @@ impl Build {
 
         for dir in &[&build_dir, &lib_dir, &include_dir] {
             if dir.exists() {
-                fs::remove_dir_all(dir).expect(&format!("cannot remove {}", dir.display()));
+                fs::remove_dir_all(dir)
+                    .unwrap_or_else(|e| panic!("cannot remove {}: {}", dir.display(), e));
             }
-            fs::create_dir_all(dir).expect(&format!("cannot create {}", dir.display()));
+            fs::create_dir_all(dir)
+                .unwrap_or_else(|e| panic!("cannot create {}: {}", dir.display(), e));
         }
         cp_r(&source_dir, &build_dir);
 
@@ -153,8 +158,8 @@ impl Build {
         .unwrap();
 
         Artifacts {
-            lib_dir: lib_dir,
-            include_dir: include_dir,
+            lib_dir,
+            include_dir,
             libs: vec!["luajit".to_string()],
         }
     }
