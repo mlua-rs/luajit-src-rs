@@ -86,10 +86,15 @@ impl Build {
         make.current_dir(build_dir.join("src"));
         make.arg("-e");
 
-        if target == "x86_64-apple-darwin" {
-            // 10.15 causes segmentation fault on github ci
-            make.env("MACOSX_DEPLOYMENT_TARGET", "10.11");
-            make.env("XCFLAGS", "-DLUAJIT_ENABLE_GC64");
+        match target {
+            "x86_64-apple-darwin" => {
+                // 10.15 causes segmentation fault on github ci
+                make.env("MACOSX_DEPLOYMENT_TARGET", "10.11");
+            }
+            "aarch64-apple-darwin" => {
+                make.env("MACOSX_DEPLOYMENT_TARGET", "11.0");
+            }
+            _ => {}
         }
 
         // Infer ar/ranlib tools from cross compilers if the it looks like
