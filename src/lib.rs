@@ -106,6 +106,7 @@ impl Build {
         }
 
         make.env("BUILDMODE", "static");
+        make.env("XCFLAGS", "-fPIC");
         self.run_command(make, "building LuaJIT");
 
         for f in &["lauxlib.h", "lua.h", "luaconf.h", "luajit.h", "lualib.h"] {
