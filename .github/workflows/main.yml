@@ -81,6 +81,7 @@ jobs:
     - name: Run ${{ matrix.lua }} tests
       run: |
         cargo test --manifest-path testcrate/Cargo.toml --release
+        cargo test --manifest-path testcrate/Cargo.toml --release --features lua52compat
       shell: bash
 
   rustfmt:

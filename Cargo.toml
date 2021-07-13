@@ -11,5 +11,8 @@ description = """
 Sources of LuaJIT 2.1 (OpenResty's branch) and logic to build it.
 """
 
+[features]
+lua52compat = []
+
 [dependencies]
 cc = "1.0"

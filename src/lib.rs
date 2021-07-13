@@ -105,8 +105,13 @@ impl Build {
             make.env("CROSS", prefix);
         }
 
+        let mut xcflags = vec!["-fPIC"];
+        if cfg!(feature = "lua52compat") {
+            xcflags.push("-DLUAJIT_ENABLE_LUA52COMPAT");
+        }
+
         make.env("BUILDMODE", "static");
-        make.env("XCFLAGS", "-fPIC");
+        make.env("XCFLAGS", xcflags.join(" "));
         self.run_command(make, "building LuaJIT");
 
         for f in &["lauxlib.h", "lua.h", "luaconf.h", "luajit.h", "lualib.h"] {
