@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Aleksandr Orlenko <zxteam@protonmail.com>"]
 
 [features]
-lua52compat = ["luajit-src/lua52compat"]
+lua52compat = []
 
 [build-dependencies]
 luajit-src = { path = ".." }
