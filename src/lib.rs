@@ -47,8 +47,8 @@ impl Build {
         self
     }
 
-    pub fn lua52compat(&mut self, status: bool) -> &mut Build {
-        self.options.lua52compat = status;
+    pub fn lua52compat(&mut self, enabled: bool) -> &mut Build {
+        self.options.lua52compat = enabled;
         self
     }
 
@@ -145,8 +145,9 @@ impl Build {
     pub fn build_msvc(&mut self) -> Artifacts {
         let target = &self.target.as_ref().expect("TARGET not set")[..];
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR not set");
-        let source_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("luajit2");
-        let extras_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("extras");
+        let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let source_dir = manifest_dir.join("luajit2");
+        let extras_dir = manifest_dir.join("extras");
         let build_dir = out_dir.join("build");
         let lib_dir = out_dir.join("lib");
         let include_dir = out_dir.join("include");
@@ -160,16 +161,16 @@ impl Build {
                 .unwrap_or_else(|e| panic!("cannot create {}: {}", dir.display(), e));
         }
         cp_r(&source_dir, &build_dir);
-        cp_r(&extras_dir, &build_dir.join("src"));
 
         let mut msvcbuild = Command::new(build_dir.join("src").join("msvcbuild.bat"));
         msvcbuild.current_dir(build_dir.join("src"));
         if self.options.lua52compat {
+            cp_r(&extras_dir, &build_dir.join("src"));
             msvcbuild.arg("lua52c");
         }
         msvcbuild.arg("static");
 
-        let cl = cc::windows_registry::find_tool(&target, "cl.exe").expect("failed to find cl");
+        let cl = cc::windows_registry::find_tool(target, "cl.exe").expect("failed to find cl");
         for (k, v) in cl.env() {
             msvcbuild.env(k, v);
         }
