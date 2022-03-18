@@ -7,6 +7,7 @@ pub struct Build {
     out_dir: Option<PathBuf>,
     target: Option<String>,
     host: Option<String>,
+    cfg_windows: bool,
     options: Options,
 }
 
@@ -28,6 +29,7 @@ impl Build {
             out_dir: env::var_os("OUT_DIR").map(|s| PathBuf::from(s).join("luajit-build")),
             target: env::var("TARGET").ok(),
             host: env::var("HOST").ok(),
+            cfg_windows: env::var("CARGO_CFG_WINDOWS").is_ok(),
             options: Options::default(),
         }
     }
@@ -44,6 +46,11 @@ impl Build {
 
     pub fn host(&mut self, host: &str) -> &mut Build {
         self.host = Some(host.to_string());
+        self
+    }
+
+    pub fn cfg_windows(&mut self, cfg_windows: bool) -> &mut Build {
+        self.cfg_windows = cfg_windows;
         self
     }
 
@@ -120,6 +127,11 @@ impl Build {
         let mut xcflags = vec!["-fPIC"];
         if self.options.lua52compat {
             xcflags.push("-DLUAJIT_ENABLE_LUA52COMPAT");
+        }
+
+        // Cross-compiling to Windows needs this flag.
+        if self.cfg_windows {
+            make.env("TARGET_SYS", "Windows");
         }
 
         make.env("BUILDMODE", "static");
