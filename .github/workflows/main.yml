@@ -8,51 +8,48 @@ jobs:
     strategy:
       matrix:
         target:
-        - x86_64-unknown-linux-gnu
-        - aarch64-unknown-linux-gnu
-        - mips64-unknown-linux-gnuabi64
-        - x86_64-apple-darwin
-        - aarch64-apple-darwin
-        - x86_64-pc-windows-msvc
-        rust: [stable]
+          - x86_64-unknown-linux-gnu
+          - aarch64-unknown-linux-gnu
+          - mips64-unknown-linux-gnuabi64
+          - x86_64-apple-darwin
+          - aarch64-apple-darwin
+          - x86_64-pc-windows-msvc
         include:
-        - target: x86_64-unknown-linux-gnu
-          os: ubuntu-18.04
-        - target: aarch64-unknown-linux-gnu
-          os: ubuntu-18.04
-        - target: mips64-unknown-linux-gnuabi64
-          os: ubuntu-18.04
-        - target: x86_64-apple-darwin
-          os: macos-latest
-        - target: aarch64-apple-darwin
-          os: macos-11.0
-        - target: x86_64-pc-windows-msvc
-          os: windows-latest
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-22.04
+          - target: mips64-unknown-linux-gnuabi64
+            os: ubuntu-22.04
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        target: ${{ matrix.target }}
-        override: false
-    - name: Install GCC (aarch64-unknown-linux-gnu)
-      if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
-      shell: bash
-    - name: Install GCC (mips64-unknown-linux-gnuabi64)
-      if: ${{ matrix.target == 'mips64-unknown-linux-gnuabi64' }}
-      run: |
-        sudo apt-get update -y
-        sudo apt-get install -y --no-install-recommends gcc-mips64-linux-gnuabi64 libc6-dev-mips64-cross
-      shell: bash
-    - name: Build ${{ matrix.lua }}
-      run: |
-        cargo build --manifest-path testcrate/Cargo.toml --target ${{ matrix.target }} --release
-      shell: bash
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+      - name: Install GCC (aarch64-unknown-linux-gnu)
+        if: ${{ matrix.target == 'aarch64-unknown-linux-gnu' }}
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+        shell: bash
+      - name: Install GCC (mips64-unknown-linux-gnuabi64)
+        if: ${{ matrix.target == 'mips64-unknown-linux-gnuabi64' }}
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends gcc-mips64-linux-gnuabi64 libc6-dev-mips64-cross
+        shell: bash
+      - name: Build ${{ matrix.lua }}
+        run: |
+          cargo build --manifest-path testcrate/Cargo.toml --target ${{ matrix.target }} --release
+        shell: bash
 
   test:
     name: Test
@@ -60,40 +57,35 @@ jobs:
     needs: build
     strategy:
       matrix:
-        os: [ubuntu-18.04, macos-latest, windows-latest]
-        rust: [stable]
+        os: [ubuntu-22.04, macos-latest, windows-latest]
         include:
-        - os: ubuntu-18.04
-          target: x86_64-unknown-linux-gnu
-        - os: macos-latest
-          target: x86_64-apple-darwin
-        - os: windows-latest
-          target: x86_64-pc-windows-msvc
+          - os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: ${{ matrix.rust }}
-        target: ${{ matrix.target }}
-        override: true
-    - name: Run ${{ matrix.lua }} tests
-      run: |
-        cargo test --manifest-path testcrate/Cargo.toml --release
-        cargo test --manifest-path testcrate/Cargo.toml --release --features lua52compat
-      shell: bash
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+      - name: Run ${{ matrix.lua }} tests
+        run: |
+          cargo test --manifest-path testcrate/Cargo.toml --release
+          cargo test --manifest-path testcrate/Cargo.toml --release --features lua52compat
+        shell: bash
 
   rustfmt:
     name: Rustfmt
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v2
-      with:
-        submodules: true
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        components: rustfmt
-        override: true
-    - run: cargo fmt -- --check
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - run: cargo fmt -- --check
