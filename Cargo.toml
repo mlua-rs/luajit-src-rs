@@ -13,3 +13,4 @@ Sources of LuaJIT 2.1 (OpenResty's branch) and logic to build it.
 
 [dependencies]
 cc = "1.0"
+which = "4.4"

@@ -46,7 +46,7 @@ jobs:
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends gcc-mips64-linux-gnuabi64 libc6-dev-mips64-cross
         shell: bash
-      - name: Build ${{ matrix.lua }}
+      - name: Build for ${{ matrix.target }}
         run: |
           cargo build --manifest-path testcrate/Cargo.toml --target ${{ matrix.target }} --release
         shell: bash
@@ -72,7 +72,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           target: ${{ matrix.target }}
-      - name: Run ${{ matrix.lua }} tests
+      - name: Run tests
         run: |
           cargo test --manifest-path testcrate/Cargo.toml --release
           cargo test --manifest-path testcrate/Cargo.toml --release --features lua52compat
