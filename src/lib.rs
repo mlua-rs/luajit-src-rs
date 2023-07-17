@@ -135,9 +135,9 @@ impl Build {
         let compiler_path =
             which::which(compiler_path).expect(&format!("cannot find {compiler_path}"));
         let bindir = compiler_path.parent().unwrap();
-        let compiler_path = compiler_path.to_string_lossy();
+        let compiler_path = compiler_path.to_str().unwrap();
         let compiler_args = compiler.cflags_env();
-        let compiler_args = compiler_args.to_string_lossy();
+        let compiler_args = compiler_args.to_str().unwrap();
         if env::var_os("STATIC_CC").is_none() {
             make.env("STATIC_CC", format!("{compiler_path} {compiler_args}"));
         }
