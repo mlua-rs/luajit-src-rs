@@ -99,11 +99,10 @@ impl Build {
         make.arg("-e");
 
         match target {
-            "x86_64-apple-darwin" => {
-                // 10.15 causes segmentation fault on github ci
+            "x86_64-apple-darwin" if env::var_os("MACOSX_DEPLOYMENT_TARGET").is_none() => {
                 make.env("MACOSX_DEPLOYMENT_TARGET", "10.11");
             }
-            "aarch64-apple-darwin" => {
+            "aarch64-apple-darwin" if env::var_os("MACOSX_DEPLOYMENT_TARGET").is_none() => {
                 make.env("MACOSX_DEPLOYMENT_TARGET", "11.0");
             }
             _ if target.contains("linux") => {
