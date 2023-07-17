@@ -313,6 +313,13 @@ impl Artifacts {
     }
 
     pub fn print_cargo_metadata(&self) {
+        println!("cargo:rerun-if-env-changed=HOST_CC");
+        println!("cargo:rerun-if-env-changed=STATIC_CC");
+        println!("cargo:rerun-if-env-changed=TARGET_LD");
+        println!("cargo:rerun-if-env-changed=TARGET_AR");
+        println!("cargo:rerun-if-env-changed=TARGET_STRIP");
+        println!("cargo:rerun-if-env-changed=MACOSX_DEPLOYMENT_TARGET");
+
         println!("cargo:rustc-link-search=native={}", self.lib_dir.display());
         for lib in self.libs.iter() {
             println!("cargo:rustc-link-lib=static={}", lib);
