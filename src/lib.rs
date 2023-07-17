@@ -106,6 +106,12 @@ impl Build {
             "aarch64-apple-darwin" => {
                 make.env("MACOSX_DEPLOYMENT_TARGET", "11.0");
             }
+            _ if target.contains("linux") => {
+                make.env("TARGET_SYS", "Linux");
+            }
+            _ if target.contains("windows") => {
+                make.env("TARGET_SYS", "Windows");
+            }
             _ => {}
         }
 

@@ -13,6 +13,7 @@ jobs:
           - mips64-unknown-linux-gnuabi64
           - x86_64-apple-darwin
           - aarch64-apple-darwin
+          - x86_64-pc-windows-gnu
           - x86_64-pc-windows-msvc
         include:
           - target: x86_64-unknown-linux-gnu
@@ -25,6 +26,8 @@ jobs:
             os: macos-latest
           - target: aarch64-apple-darwin
             os: macos-latest
+          - target: x86_64-pc-windows-gnu
+            os: ubuntu-22.04
           - target: x86_64-pc-windows-msvc
             os: windows-latest
     steps:
@@ -45,6 +48,12 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends gcc-mips64-linux-gnuabi64 libc6-dev-mips64-cross
+        shell: bash
+      - name: Install GCC (x86_64-pc-windows-gnu)
+        if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends gcc-mingw-w64-x86-64
         shell: bash
       - name: Build for ${{ matrix.target }}
         run: |
