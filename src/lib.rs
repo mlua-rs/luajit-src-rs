@@ -133,7 +133,7 @@ impl Build {
         };
 
         let compiler_path =
-            which::which(compiler_path).expect(&format!("cannot find {compiler_path}"));
+            which::which(compiler_path).unwrap_or_else(|_| panic!("cannot find {compiler_path}"));
         let bindir = compiler_path.parent().unwrap();
         let compiler_path = compiler_path.to_str().unwrap();
         let compiler_args = compiler.cflags_env();
