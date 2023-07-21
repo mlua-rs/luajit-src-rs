@@ -10,6 +10,7 @@ license = "MIT"
 description = """
 Sources of LuaJIT 2.1 (OpenResty's branch) and logic to build it.
 """
+exclude = ["/luajit2/doc", "/luajit2/etc", "/luajit2/t"]
 
 [dependencies]
 cc = "1.0"
