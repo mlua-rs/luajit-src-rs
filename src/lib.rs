@@ -147,42 +147,35 @@ impl Build {
 
         // Find ar
         if env::var_os("TARGET_AR").is_none() {
-            if bindir.join(format!("{prefix}ar")).is_file() {
-                let mut ar = bindir.join(format!("{prefix}ar")).into_os_string();
-                ar.push(" rcus");
-                make.env("TARGET_AR", ar);
-            } else if compiler.is_like_clang() {
-                if bindir.join("llvm-ar").is_file() {
-                    let mut ar = bindir.join("llvm-ar").into_os_string();
-                    ar.push(" rcus");
-                    make.env("TARGET_AR", ar);
-                } else {
-                    panic!("cannot find {prefix}ar or llvm-ar");
-                }
+            let mut ar = if bindir.join(format!("{prefix}ar")).is_file() {
+                bindir.join(format!("{prefix}ar")).into_os_string()
+            } else if compiler.is_like_clang() && bindir.join("llvm-ar").is_file() {
+                bindir.join("llvm-ar").into_os_string()
             } else if compiler.is_like_gnu() && bindir.join("ar").is_file() {
-                let mut ar = bindir.join("ar").into_os_string();
-                ar.push(" rcus");
-                make.env("TARGET_AR", ar);
+                bindir.join("ar").into_os_string()
+            } else if let Ok(ar) = which::which(format!("{prefix}ar")) {
+                ar.into_os_string()
             } else {
-                panic!("cannot find {prefix}ar");
-            }
+                panic!("cannot find {prefix}ar")
+            };
+            ar.push(" rcus");
+            make.env("TARGET_AR", ar);
         }
 
         // Find strip
         if env::var_os("TARGET_STRIP").is_none() {
-            if bindir.join(format!("{prefix}strip")).is_file() {
-                make.env("TARGET_STRIP", bindir.join(format!("{prefix}strip")));
-            } else if compiler.is_like_clang() {
-                if bindir.join("llvm-strip").is_file() {
-                    make.env("TARGET_STRIP", bindir.join("llvm-strip"));
-                } else {
-                    panic!("cannot find {prefix}strip or llvm-strip");
-                }
+            let strip = if bindir.join(format!("{prefix}strip")).is_file() {
+                bindir.join(format!("{prefix}strip"))
+            } else if compiler.is_like_clang() && bindir.join("llvm-strip").is_file() {
+                bindir.join("llvm-strip")
             } else if compiler.is_like_gnu() && bindir.join("strip").is_file() {
-                make.env("TARGET_STRIP", bindir.join("strip"));
+                bindir.join("strip")
+            } else if let Ok(strip) = which::which(format!("{prefix}strip")) {
+                strip
             } else {
-                panic!("cannot find {prefix}strip");
-            }
+                panic!("cannot find {prefix}strip")
+            };
+            make.env("TARGET_STRIP", strip);
         }
 
         let mut xcflags = vec!["-fPIC"];
