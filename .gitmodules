@@ -1,3 +1,4 @@
 [submodule "luajit2"]
 	path = luajit2
-	url = https://github.com/openresty/luajit2
+	url = https://github.com/LuaJIT/LuaJIT.git
+	branch = v2.1
