@@ -11,7 +11,6 @@ jobs:
           - x86_64-unknown-linux-gnu
           - i686-unknown-linux-gnu
           - aarch64-unknown-linux-gnu
-          - mips64-unknown-linux-gnuabi64
           - x86_64-apple-darwin
           - aarch64-apple-darwin
           - x86_64-pc-windows-gnu
@@ -23,8 +22,6 @@ jobs:
           - target: i686-unknown-linux-gnu
             os: ubuntu-22.04
           - target: aarch64-unknown-linux-gnu
-            os: ubuntu-22.04
-          - target: mips64-unknown-linux-gnuabi64
             os: ubuntu-22.04
           - target: x86_64-apple-darwin
             os: macos-latest
@@ -54,12 +51,6 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu libc6-dev-arm64-cross
-        shell: bash
-      - name: Install GCC (mips64-unknown-linux-gnuabi64)
-        if: ${{ matrix.target == 'mips64-unknown-linux-gnuabi64' }}
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends gcc-mips64-linux-gnuabi64 libc6-dev-mips64-cross
         shell: bash
       - name: Install GCC (x86_64-pc-windows-gnu)
         if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
