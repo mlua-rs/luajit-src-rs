@@ -14,4 +14,4 @@ exclude = ["/luajit2/doc", "/luajit2/etc"]
 
 [dependencies]
 cc = "1.0"
-which = "4.4"
+which = "5.0"
