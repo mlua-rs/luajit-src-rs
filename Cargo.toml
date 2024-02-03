@@ -1,6 +1,6 @@
 [package]
 name = "luajit-src"
-version = "210.5.5+f2336c4"
+version = "210.5.6+9cc2e42"
 authors = ["Aleksandr Orlenko <zxteam@protonmail.com>"]
 edition = "2021"
 repository = "https://github.com/khvzak/luajit-src-rs"
@@ -14,4 +14,4 @@ exclude = ["/luajit2/doc", "/luajit2/etc"]
 
 [dependencies]
 cc = "1.0"
-which = "5.0"
+which = "6.0"
