@@ -52,7 +52,7 @@ impl Build {
     }
 
     fn cmd_make(&self) -> Command {
-        match &self.host.as_ref().expect("HOST dir not set")[..] {
+        match &self.host.as_ref().expect("HOST is not set")[..] {
             "x86_64-unknown-dragonfly" => Command::new("gmake"),
             "x86_64-unknown-freebsd" => Command::new("gmake"),
             _ => Command::new("make"),
@@ -60,7 +60,7 @@ impl Build {
     }
 
     pub fn build(&mut self) -> Artifacts {
-        let target = &self.target.as_ref().expect("TARGET not set")[..];
+        let target = &self.target.as_ref().expect("TARGET is not set")[..];
 
         if target.contains("msvc") {
             return self.build_msvc();
@@ -70,9 +70,9 @@ impl Build {
     }
 
     fn build_unix(&mut self) -> Artifacts {
-        let target = &self.target.as_ref().expect("TARGET not set")[..];
-        let host = &self.host.as_ref().expect("HOST not set")[..];
-        let out_dir = self.out_dir.as_ref().expect("OUT_DIR not set");
+        let target = &self.target.as_ref().expect("TARGET is not set")[..];
+        let host = &self.host.as_ref().expect("HOST is not set")[..];
+        let out_dir = self.out_dir.as_ref().expect("OUT_DIR is not set");
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let source_dir = manifest_dir.join("luajit2");
         let build_dir = out_dir.join("luajit-build");
@@ -198,8 +198,8 @@ impl Build {
     }
 
     fn build_msvc(&mut self) -> Artifacts {
-        let target = &self.target.as_ref().expect("TARGET not set")[..];
-        let out_dir = self.out_dir.as_ref().expect("OUT_DIR not set");
+        let target = &self.target.as_ref().expect("TARGET is not set")[..];
+        let out_dir = self.out_dir.as_ref().expect("OUT_DIR is not set");
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let source_dir = manifest_dir.join("luajit2");
         let extras_dir = manifest_dir.join("extras");
