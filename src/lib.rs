@@ -69,11 +69,12 @@ impl Build {
         self.build_unix()
     }
 
-    pub fn build_unix(&mut self) -> Artifacts {
+    fn build_unix(&mut self) -> Artifacts {
         let target = &self.target.as_ref().expect("TARGET not set")[..];
         let host = &self.host.as_ref().expect("HOST not set")[..];
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR not set");
-        let source_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("luajit2");
+        let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+        let source_dir = manifest_dir.join("luajit2");
         let build_dir = out_dir.join("luajit-build");
 
         // Cleanup
@@ -83,6 +84,10 @@ impl Build {
         fs::create_dir_all(&build_dir)
             .unwrap_or_else(|e| panic!("cannot create {}: {}", build_dir.display(), e));
         cp_r(&source_dir, &build_dir);
+
+        // Copy release version file
+        #[rustfmt::skip]
+        fs::copy(&manifest_dir.join("luajit_relver.txt"), &build_dir.join(".relver")).unwrap();
 
         let mut cc = cc::Build::new();
         cc.warnings(false);
@@ -192,7 +197,7 @@ impl Build {
         }
     }
 
-    pub fn build_msvc(&mut self) -> Artifacts {
+    fn build_msvc(&mut self) -> Artifacts {
         let target = &self.target.as_ref().expect("TARGET not set")[..];
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR not set");
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -207,6 +212,10 @@ impl Build {
         fs::create_dir_all(&build_dir)
             .unwrap_or_else(|e| panic!("cannot create {}: {}", build_dir.display(), e));
         cp_r(&source_dir, &build_dir);
+
+        // Copy release version file
+        #[rustfmt::skip]
+        fs::copy(&manifest_dir.join("luajit_relver.txt"), &build_dir.join(".relver")).unwrap();
 
         let mut msvcbuild = Command::new(build_dir.join("src").join("msvcbuild.bat"));
         msvcbuild.current_dir(build_dir.join("src"));
