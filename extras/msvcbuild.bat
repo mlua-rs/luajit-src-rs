@@ -9,7 +9,8 @@
 @rem   lua52c   enable lua52 compat mode
 @rem   debug    emit debug symbols
 @rem   amalg    amalgamated build
-@rem   static   static linkage
+@rem   static   create static lib to statically link into your project
+@rem   mixed    create static lib to build a DLL in your project
 
 @if not defined INCLUDE goto :FAIL
 
@@ -112,12 +113,14 @@ buildvm -m folddef -o lj_folddef.h lj_opt_fold.c
 @if "%1"=="static" goto :STATIC
 %LJCOMPILE% %LJDYNBUILD% lj_*.c lib_*.c
 @if errorlevel 1 goto :BAD
+@if "%1"=="mixed" goto :STATICLIB
 %LJLINK% /DLL /OUT:%LJDLLNAME% lj_*.obj lib_*.obj
 @if errorlevel 1 goto :BAD
 @goto :MTDLL
 :STATIC
 %LJCOMPILE% lj_*.c lib_*.c
 @if errorlevel 1 goto :BAD
+:STATICLIB
 %LJLIB% /OUT:%LJLIBNAME% lj_*.obj lib_*.obj
 @if errorlevel 1 goto :BAD
 @goto :MTDLL
@@ -125,13 +128,15 @@ buildvm -m folddef -o lj_folddef.h lj_opt_fold.c
 @if "%2"=="static" goto :AMALGSTATIC
 %LJCOMPILE% %LJDYNBUILD% ljamalg.c
 @if errorlevel 1 goto :BAD
+@if "%2"=="mixed" goto :AMALGSTATICLIB
 %LJLINK% /DLL /OUT:%LJDLLNAME% ljamalg.obj lj_vm.obj
 @if errorlevel 1 goto :BAD
 @goto :MTDLL
 :AMALGSTATIC
 %LJCOMPILE% ljamalg.c
 @if errorlevel 1 goto :BAD
-%LJLINK% /OUT:%LJDLLNAME% ljamalg.obj lj_vm.obj
+:AMALGSTATICLIB
+%LJLIB% /OUT:%LJLIBNAME% ljamalg.obj lj_vm.obj
 @if errorlevel 1 goto :BAD
 :MTDLL
 if exist %LJDLLNAME%.manifest^
