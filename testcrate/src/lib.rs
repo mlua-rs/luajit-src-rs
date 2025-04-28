@@ -11,7 +11,7 @@ extern "C" {
 
 #[cfg(test)]
 mod tests {
-    use std::{ptr, slice};
+    use std::{ptr, slice, str};
 
     use super::*;
 
