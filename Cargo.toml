@@ -12,6 +12,9 @@ Sources of LuaJIT 2.1 and logic to build it.
 """
 exclude = ["/luajit2/doc", "/luajit2/etc"]
 
+[workspace]
+members = ["testcrate"]
+
 [dependencies]
-cc = "1.0"
+cc = "1.2"
 which = "7.0"

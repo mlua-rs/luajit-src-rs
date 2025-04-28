@@ -7,29 +7,28 @@ pub struct Build {
     out_dir: Option<PathBuf>,
     target: Option<String>,
     host: Option<String>,
-    options: Options,
+    lua52compat: bool,
 }
 
 pub struct Artifacts {
-    include_dir: PathBuf,
     lib_dir: PathBuf,
     libs: Vec<String>,
 }
 
-#[derive(Default, Clone, Copy)]
-struct Options {
-    lua52compat: bool,
+impl Default for Build {
+    fn default() -> Self {
+        Build {
+            out_dir: env::var_os("OUT_DIR").map(PathBuf::from),
+            target: env::var("TARGET").ok(),
+            host: env::var("HOST").ok(),
+            lua52compat: false,
+        }
+    }
 }
 
 impl Build {
-    #[allow(clippy::new_without_default)]
     pub fn new() -> Build {
-        Build {
-            out_dir: env::var_os("OUT_DIR").map(|s| PathBuf::from(s).join("luajit-build")),
-            target: env::var("TARGET").ok(),
-            host: env::var("HOST").ok(),
-            options: Options::default(),
-        }
+        Build::default()
     }
 
     pub fn out_dir<P: AsRef<Path>>(&mut self, path: P) -> &mut Build {
@@ -48,7 +47,7 @@ impl Build {
     }
 
     pub fn lua52compat(&mut self, enabled: bool) -> &mut Build {
-        self.options.lua52compat = enabled;
+        self.lua52compat = enabled;
         self
     }
 
@@ -75,22 +74,18 @@ impl Build {
         let host = &self.host.as_ref().expect("HOST not set")[..];
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR not set");
         let source_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("luajit2");
-        let build_dir = out_dir.join("build");
-        let lib_dir = out_dir.join("lib");
-        let include_dir = out_dir.join("include");
+        let build_dir = out_dir.join("luajit-build");
 
-        for dir in &[&build_dir, &lib_dir, &include_dir] {
-            if dir.exists() {
-                fs::remove_dir_all(dir)
-                    .unwrap_or_else(|e| panic!("cannot remove {}: {}", dir.display(), e));
-            }
-            fs::create_dir_all(dir)
-                .unwrap_or_else(|e| panic!("cannot create {}: {}", dir.display(), e));
+        // Cleanup
+        if build_dir.exists() {
+            fs::remove_dir_all(&build_dir).unwrap();
         }
+        fs::create_dir_all(&build_dir)
+            .unwrap_or_else(|e| panic!("cannot create {}: {}", build_dir.display(), e));
         cp_r(&source_dir, &build_dir);
 
         let mut cc = cc::Build::new();
-        cc.target(target).host(host).warnings(false).opt_level(2);
+        cc.warnings(false);
         let compiler = cc.get_compiler();
         let compiler_path = compiler.path().to_str().unwrap();
 
@@ -179,27 +174,21 @@ impl Build {
         }
 
         let mut xcflags = vec!["-fPIC"];
-        if self.options.lua52compat {
+        if self.lua52compat {
             xcflags.push("-DLUAJIT_ENABLE_LUA52COMPAT");
+        }
+        if cfg!(debug_assertions) {
+            xcflags.push("-DLUA_USE_ASSERT");
+            xcflags.push("-DLUA_USE_APICHECK");
         }
 
         make.env("BUILDMODE", "static");
         make.env("XCFLAGS", xcflags.join(" "));
         self.run_command(make, "building LuaJIT");
 
-        for f in &["lauxlib.h", "lua.h", "luaconf.h", "luajit.h", "lualib.h"] {
-            fs::copy(build_dir.join("src").join(f), include_dir.join(f)).unwrap();
-        }
-        fs::copy(
-            build_dir.join("src").join("libluajit.a"),
-            lib_dir.join("libluajit-5.1.a"),
-        )
-        .unwrap();
-
         Artifacts {
-            lib_dir,
-            include_dir,
-            libs: vec!["luajit-5.1".to_string()],
+            lib_dir: build_dir.join("src"),
+            libs: vec!["luajit".to_string()],
         }
     }
 
@@ -209,23 +198,19 @@ impl Build {
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let source_dir = manifest_dir.join("luajit2");
         let extras_dir = manifest_dir.join("extras");
-        let build_dir = out_dir.join("build");
-        let lib_dir = out_dir.join("lib");
-        let include_dir = out_dir.join("include");
+        let build_dir = out_dir.join("luajit-build");
 
-        for dir in &[&build_dir, &lib_dir, &include_dir] {
-            if dir.exists() {
-                fs::remove_dir_all(dir)
-                    .unwrap_or_else(|e| panic!("cannot remove {}: {}", dir.display(), e));
-            }
-            fs::create_dir_all(dir)
-                .unwrap_or_else(|e| panic!("cannot create {}: {}", dir.display(), e));
+        // Cleanup
+        if build_dir.exists() {
+            fs::remove_dir_all(&build_dir).unwrap();
         }
+        fs::create_dir_all(&build_dir)
+            .unwrap_or_else(|e| panic!("cannot create {}: {}", build_dir.display(), e));
         cp_r(&source_dir, &build_dir);
 
         let mut msvcbuild = Command::new(build_dir.join("src").join("msvcbuild.bat"));
         msvcbuild.current_dir(build_dir.join("src"));
-        if self.options.lua52compat {
+        if self.lua52compat {
             cp_r(&extras_dir, &build_dir.join("src"));
             msvcbuild.arg("lua52c");
         }
@@ -238,19 +223,9 @@ impl Build {
 
         self.run_command(msvcbuild, "building LuaJIT");
 
-        for f in &["lauxlib.h", "lua.h", "luaconf.h", "luajit.h", "lualib.h"] {
-            fs::copy(build_dir.join("src").join(f), include_dir.join(f)).unwrap();
-        }
-        fs::copy(
-            build_dir.join("src").join("lua51.lib"),
-            lib_dir.join("luajit.lib"),
-        )
-        .unwrap();
-
         Artifacts {
-            lib_dir,
-            include_dir,
-            libs: vec!["luajit".to_string()],
+            lib_dir: build_dir.join("src"),
+            libs: vec!["lua51".to_string()],
         }
     }
 
@@ -293,10 +268,6 @@ fn cp_r(src: &Path, dst: &Path) {
 }
 
 impl Artifacts {
-    pub fn include_dir(&self) -> &Path {
-        &self.include_dir
-    }
-
     pub fn lib_dir(&self) -> &Path {
         &self.lib_dir
     }
@@ -317,7 +288,5 @@ impl Artifacts {
         for lib in self.libs.iter() {
             println!("cargo:rustc-link-lib=static={}", lib);
         }
-        println!("cargo:include={}", self.include_dir.display());
-        println!("cargo:lib={}", self.lib_dir.display());
     }
 }
