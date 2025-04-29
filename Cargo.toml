@@ -1,9 +1,9 @@
 [package]
 name = "luajit-src"
-version = "210.5.12+a4f56a4"
+version = "210.6.0+eec7a80"
 authors = ["Aleksandr Orlenko <zxteam@protonmail.com>"]
 edition = "2021"
-repository = "https://github.com/khvzak/luajit-src-rs"
+repository = "https://github.com/mlua-rs/luajit-src-rs"
 keywords = ["lua", "luajit"]
 readme = "README.md"
 license = "MIT"
