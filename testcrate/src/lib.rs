@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 use std::os::raw::{c_char, c_int, c_long, c_void};
 
 extern "C" {
@@ -9,28 +11,26 @@ extern "C" {
     pub fn lua_pcall(state: *mut c_void, nargs: c_int, nresults: c_int, errfunc: c_int) -> c_int;
 }
 
+pub unsafe fn lua_getglobal(state: *mut c_void, k: *const c_char) {
+    lua_getfield(state, -10002 /* LUA_GLOBALSINDEX */, k);
+}
+
+pub unsafe fn to_string<'a>(state: *mut c_void, index: c_int) -> &'a str {
+    let mut len: c_long = 0;
+    let str_ptr = lua_tolstring(state, index, &mut len);
+    let bytes = std::slice::from_raw_parts(str_ptr as *const u8, len as usize);
+    std::str::from_utf8(bytes).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
-    use std::{ptr, slice, str};
-
     use super::*;
-
-    pub unsafe fn lua_getglobal(state: *mut c_void, k: *const c_char) {
-        lua_getfield(state, -10002 /* LUA_GLOBALSINDEX */, k);
-    }
-
-    pub unsafe fn to_string<'a>(state: *mut c_void, index: c_int) -> &'a str {
-        let mut len: c_long = 0;
-        let str_ptr = lua_tolstring(state, index, &mut len);
-        let bytes = slice::from_raw_parts(str_ptr as *const u8, len as usize);
-        str::from_utf8(bytes).unwrap()
-    }
 
     #[test]
     fn test_lua() {
         unsafe {
             let state = luaL_newstate();
-            assert!(state != ptr::null_mut());
+            assert!(!state.is_null());
 
             luaL_openlibs(state);
 
@@ -57,7 +57,7 @@ mod tests {
     fn test_lua52compat() {
         unsafe {
             let state = luaL_newstate();
-            assert!(state != ptr::null_mut());
+            assert!(!state.is_null());
 
             luaL_openlibs(state);
 
@@ -78,13 +78,9 @@ mod tests {
 
             let lua52compat = {
                 lua_getglobal(state, "lua52compat\0".as_ptr().cast());
-                to_string(state, -1)
+                to_string(state, -1) == "yes"
             };
-
-            #[cfg(feature = "lua52compat")]
-            assert_eq!(lua52compat, "yes");
-            #[cfg(not(feature = "lua52compat"))]
-            assert_eq!(lua52compat, "no");
+            assert_eq!(lua52compat, cfg!(feature = "lua52compat"));
         }
     }
 }
