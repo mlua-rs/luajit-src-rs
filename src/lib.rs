@@ -87,7 +87,7 @@ impl Build {
 
         // Copy release version file
         #[rustfmt::skip]
-        fs::copy(&manifest_dir.join("luajit_relver.txt"), &build_dir.join(".relver")).unwrap();
+        fs::copy(manifest_dir.join("luajit_relver.txt"), build_dir.join(".relver")).unwrap();
 
         let mut cc = cc::Build::new();
         cc.warnings(false);
@@ -215,7 +215,7 @@ impl Build {
 
         // Copy release version file
         #[rustfmt::skip]
-        fs::copy(&manifest_dir.join("luajit_relver.txt"), &build_dir.join(".relver")).unwrap();
+        fs::copy(manifest_dir.join("luajit_relver.txt"), build_dir.join(".relver")).unwrap();
 
         let mut msvcbuild = Command::new(build_dir.join("src").join("msvcbuild.bat"));
         msvcbuild.current_dir(build_dir.join("src"));
@@ -239,16 +239,14 @@ impl Build {
     }
 
     fn run_command(&self, mut command: Command, desc: &str) {
-        println!("running {:?}", command);
         let status = command.status().unwrap();
         if !status.success() {
             panic!(
                 "
-Error {}:
-    Command: {:?}
-    Exit status: {}
-    ",
-                desc, command, status
+Error {desc}:
+    Command: {command:?}
+    Exit status: {status}
+    "
             );
         }
     }
@@ -295,7 +293,7 @@ impl Artifacts {
 
         println!("cargo:rustc-link-search=native={}", self.lib_dir.display());
         for lib in self.libs.iter() {
-            println!("cargo:rustc-link-lib=static={}", lib);
+            println!("cargo:rustc-link-lib=static={lib}");
         }
     }
 }
