@@ -1,6 +1,6 @@
 [package]
 name = "luajit-src"
-version = "210.6.0+eec7a80"
+version = "210.6.1+f9140a6"
 authors = ["Aleksandr Orlenko <zxteam@protonmail.com>"]
 edition = "2021"
 repository = "https://github.com/mlua-rs/luajit-src-rs"
