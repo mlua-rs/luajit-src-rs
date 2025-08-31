@@ -86,8 +86,14 @@ impl Build {
         cp_r(&source_dir, &build_dir);
 
         // Copy release version file
+        let relver = build_dir.join(".relver");
         #[rustfmt::skip]
-        fs::copy(manifest_dir.join("luajit_relver.txt"), build_dir.join(".relver")).unwrap();
+        fs::copy(manifest_dir.join("luajit_relver.txt"), &relver).unwrap();
+
+        // Fix permissions for certain build situations
+        let mut perms = fs::metadata(&relver).unwrap().permissions();
+        perms.set_readonly(false);
+        fs::set_permissions(relver, perms).unwrap();
 
         let mut cc = cc::Build::new();
         cc.warnings(false);
