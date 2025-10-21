@@ -9,6 +9,7 @@ pub struct Build {
     target: Option<String>,
     host: Option<String>,
     lua52compat: bool,
+    debug: Option<bool>,
 }
 
 /// Represents the artifacts produced by the build process.
@@ -25,6 +26,7 @@ impl Default for Build {
             target: env::var("TARGET").ok(),
             host: env::var("HOST").ok(),
             lua52compat: false,
+            debug: None,
         }
     }
 }
@@ -63,6 +65,15 @@ impl Build {
     /// Enables or disables Lua 5.2 limited compatibility mode.
     pub fn lua52compat(&mut self, enabled: bool) -> &mut Build {
         self.lua52compat = enabled;
+        self
+    }
+
+    /// Sets whether to build LuaJIT in debug mode.
+    ///
+    /// This is optional and will default to the value of `cfg!(debug_assertions)`.
+    /// If set to `true`, it also enables Lua API checks.
+    pub fn debug(&mut self, debug: bool) -> &mut Build {
+        self.debug = Some(debug);
         self
     }
 
@@ -108,7 +119,6 @@ impl Build {
 
         // Copy release version file
         let relver = build_dir.join(".relver");
-        #[rustfmt::skip]
         fs::copy(manifest_dir.join("luajit_relver.txt"), &relver).unwrap();
 
         // Fix permissions for certain build situations
@@ -209,7 +219,10 @@ impl Build {
         if self.lua52compat {
             xcflags.push("-DLUAJIT_ENABLE_LUA52COMPAT");
         }
-        if cfg!(debug_assertions) {
+
+        let debug = self.debug.unwrap_or(cfg!(debug_assertions));
+        if debug {
+            make.env("CCDEBUG", "-g");
             xcflags.push("-DLUA_USE_ASSERT");
             xcflags.push("-DLUA_USE_APICHECK");
         }
