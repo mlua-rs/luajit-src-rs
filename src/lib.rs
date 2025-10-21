@@ -1,7 +1,9 @@
-use std::env;
-use std::fs;
+use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::{env, fs, io};
+
+type DynError = Box<dyn Error + Send + Sync>;
 
 /// Represents the configuration for building LuaJIT artifacts.
 pub struct Build {
@@ -87,6 +89,13 @@ impl Build {
 
     /// Builds the LuaJIT artifacts.
     pub fn build(&mut self) -> Artifacts {
+        self.try_build().expect("LuaJIT build failed")
+    }
+
+    /// Attempts to build the LuaJIT artifacts.
+    ///
+    /// Returns an error if the build fails.
+    pub fn try_build(&mut self) -> Result<Artifacts, DynError> {
         let target = &self.target.as_ref().expect("TARGET is not set")[..];
 
         if target.contains("msvc") {
@@ -96,7 +105,7 @@ impl Build {
         self.build_unix()
     }
 
-    fn build_unix(&mut self) -> Artifacts {
+    fn build_unix(&mut self) -> Result<Artifacts, DynError> {
         let target = &self.target.as_ref().expect("TARGET is not set")[..];
         let host = &self.host.as_ref().expect("HOST is not set")[..];
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR is not set");
@@ -109,22 +118,23 @@ impl Build {
         // Cleanup
         for dir in [&build_dir, &lib_dir, &include_dir] {
             if dir.exists() {
-                fs::remove_dir_all(dir)
-                    .unwrap_or_else(|e| panic!("cannot remove {}: {e}", dir.display()));
+                fs::remove_dir_all(dir).context(|| format!("Cannot remove {}", dir.display()))?;
             }
-            fs::create_dir_all(dir)
-                .unwrap_or_else(|e| panic!("cannot create {}: {e}", dir.display()));
+            fs::create_dir_all(dir).context(|| format!("Cannot create {}", dir.display()))?;
         }
-        cp_r(&source_dir, &build_dir);
+        cp_r(&source_dir, &build_dir)?;
 
         // Copy release version file
         let relver = build_dir.join(".relver");
-        fs::copy(manifest_dir.join("luajit_relver.txt"), &relver).unwrap();
+        fs::copy(manifest_dir.join("luajit_relver.txt"), &relver)
+            .context(|| format!("Cannot copy 'luajit_relver.txt'"))?;
 
         // Fix permissions for certain build situations
-        let mut perms = fs::metadata(&relver).unwrap().permissions();
+        let mut perms = (fs::metadata(&relver).map(|md| md.permissions()))
+            .context(|| format!("Cannot read permissions for '{}'", relver.display()))?;
         perms.set_readonly(false);
-        fs::set_permissions(relver, perms).unwrap();
+        fs::set_permissions(&relver, perms)
+            .context(|| format!("Cannot set permissions for '{}'", relver.display()))?;
 
         let mut cc = cc::Build::new();
         cc.warnings(false);
@@ -170,7 +180,7 @@ impl Build {
         };
 
         let compiler_path =
-            which::which(compiler_path).unwrap_or_else(|_| panic!("cannot find {compiler_path}"));
+            which::which(compiler_path).context(|| format!("Cannot find {compiler_path}"))?;
         let bindir = compiler_path.parent().unwrap();
         let compiler_path = compiler_path.to_str().unwrap();
         let compiler_args = compiler.cflags_env();
@@ -229,12 +239,13 @@ impl Build {
 
         make.env("BUILDMODE", "static");
         make.env("XCFLAGS", xcflags.join(" "));
-        self.run_command(make, "building LuaJIT");
+        self.run_command(&mut make)
+            .context(|| format!("Error running '{make:?}'"))?;
 
         Artifacts::make(&build_dir, &include_dir, &lib_dir, false)
     }
 
-    fn build_msvc(&mut self) -> Artifacts {
+    fn build_msvc(&mut self) -> Result<Artifacts, DynError> {
         let target = &self.target.as_ref().expect("TARGET is not set")[..];
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR is not set");
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
@@ -246,17 +257,16 @@ impl Build {
         // Cleanup
         for dir in [&build_dir, &lib_dir, &include_dir] {
             if dir.exists() {
-                fs::remove_dir_all(dir)
-                    .unwrap_or_else(|e| panic!("cannot remove {}: {e}", dir.display()));
+                fs::remove_dir_all(dir).context(|| format!("Cannot remove {}", dir.display()))?;
             }
-            fs::create_dir_all(dir)
-                .unwrap_or_else(|e| panic!("cannot create {}: {e}", dir.display()));
+            fs::create_dir_all(dir).context(|| format!("Cannot create {}", dir.display()))?;
         }
-        cp_r(&source_dir, &build_dir);
+        cp_r(&source_dir, &build_dir)?;
 
         // Copy release version file
-        #[rustfmt::skip]
-        fs::copy(manifest_dir.join("luajit_relver.txt"), build_dir.join(".relver")).unwrap();
+        let relver = build_dir.join(".relver");
+        fs::copy(manifest_dir.join("luajit_relver.txt"), &relver)
+            .context(|| format!("Cannot copy 'luajit_relver.txt'"))?;
 
         let mut msvcbuild = Command::new(build_dir.join("src").join("msvcbuild.bat"));
         msvcbuild.current_dir(build_dir.join("src"));
@@ -270,28 +280,24 @@ impl Build {
             msvcbuild.env(k, v);
         }
 
-        self.run_command(msvcbuild, "building LuaJIT");
+        self.run_command(&mut msvcbuild)
+            .context(|| format!("Error running'{msvcbuild:?}'"))?;
 
         Artifacts::make(&build_dir, &include_dir, &lib_dir, true)
     }
 
-    fn run_command(&self, mut command: Command, desc: &str) {
-        let status = command.status().unwrap();
+    fn run_command(&self, command: &mut Command) -> io::Result<()> {
+        let status = command.status()?;
         if !status.success() {
-            panic!(
-                "
-Error {desc}:
-    Command: {command:?}
-    Exit status: {status}
-    "
-            );
+            return Err(io::Error::other(format!("exited with status {status}")));
         }
+        Ok(())
     }
 }
 
-fn cp_r(src: &Path, dst: &Path) {
-    for f in fs::read_dir(src).unwrap() {
-        let f = f.unwrap();
+fn cp_r(src: &Path, dst: &Path) -> Result<(), DynError> {
+    for f in fs::read_dir(src).context(|| format!("Cannot read directory '{}'", src.display()))? {
+        let f = f.context(|| format!("Cannot read entry in '{}'", src.display()))?;
         let path = f.path();
         let name = path.file_name().unwrap();
 
@@ -302,13 +308,16 @@ fn cp_r(src: &Path, dst: &Path) {
 
         let dst = dst.join(name);
         if f.file_type().unwrap().is_dir() {
-            fs::create_dir_all(&dst).unwrap();
-            cp_r(&path, &dst);
+            fs::create_dir_all(&dst)
+                .context(|| format!("Cannot create directory '{}'", dst.display()))?;
+            cp_r(&path, &dst)?;
         } else {
             let _ = fs::remove_file(&dst);
-            fs::copy(&path, &dst).unwrap();
+            fs::copy(&path, &dst)
+                .context(|| format!("Cannot copy '{}' to '{}'", path.display(), dst.display()))?;
         }
     }
+    Ok(())
 }
 
 impl Artifacts {
@@ -345,21 +354,42 @@ impl Artifacts {
         }
     }
 
-    fn make(build_dir: &Path, include_dir: &Path, lib_dir: &Path, is_msvc: bool) -> Self {
+    fn make(
+        build_dir: &Path,
+        include_dir: &Path,
+        lib_dir: &Path,
+        is_msvc: bool,
+    ) -> Result<Self, DynError> {
         for f in &["lauxlib.h", "lua.h", "luaconf.h", "luajit.h", "lualib.h"] {
-            fs::copy(build_dir.join("src").join(f), include_dir.join(f)).unwrap();
+            let from = build_dir.join("src").join(f);
+            let to = include_dir.join(f);
+            fs::copy(&from, &to)
+                .context(|| format!("Cannot copy '{}' to '{}'", from.display(), to.display()))?;
         }
 
         let lib_name = if !is_msvc { "luajit" } else { "lua51" };
         let lib_file = if !is_msvc { "libluajit.a" } else { "lua51.lib" };
         if build_dir.join("src").join(lib_file).exists() {
-            fs::copy(build_dir.join("src").join(lib_file), lib_dir.join(lib_file)).unwrap();
+            let from = build_dir.join("src").join(lib_file);
+            let to = lib_dir.join(lib_file);
+            fs::copy(&from, &to)
+                .context(|| format!("Cannot copy '{}' to '{}'", from.display(), to.display()))?;
         }
 
-        Artifacts {
+        Ok(Artifacts {
             lib_dir: lib_dir.to_path_buf(),
             include_dir: include_dir.to_path_buf(),
             libs: vec![lib_name.to_string()],
-        }
+        })
+    }
+}
+
+trait ErrorContext<T> {
+    fn context(self, f: impl FnOnce() -> String) -> Result<T, DynError>;
+}
+
+impl<T, E: Error> ErrorContext<T> for Result<T, E> {
+    fn context(self, f: impl FnOnce() -> String) -> Result<T, DynError> {
+        self.map_err(|e| format!("{}: {e}", f()).into())
     }
 }
