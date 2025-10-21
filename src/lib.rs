@@ -3,6 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// Represents the configuration for building LuaJIT artifacts.
 pub struct Build {
     out_dir: Option<PathBuf>,
     target: Option<String>,
@@ -10,6 +11,7 @@ pub struct Build {
     lua52compat: bool,
 }
 
+/// Represents the artifacts produced by the build process.
 pub struct Artifacts {
     lib_dir: PathBuf,
     libs: Vec<String>,
@@ -27,25 +29,37 @@ impl Default for Build {
 }
 
 impl Build {
+    /// Creates a new `Build` instance with default settings.
     pub fn new() -> Build {
         Build::default()
     }
 
+    /// Sets the output directory for the build artifacts.
+    ///
+    /// This is required if called outside of a build script.
     pub fn out_dir<P: AsRef<Path>>(&mut self, path: P) -> &mut Build {
         self.out_dir = Some(path.as_ref().to_path_buf());
         self
     }
 
+    /// Sets the target architecture for the build.
+    ///
+    /// This is required if called outside of a build script.
     pub fn target(&mut self, target: &str) -> &mut Build {
         self.target = Some(target.to_string());
         self
     }
 
+    /// Sets the host architecture for the build.
+    ///
+    /// This is optional and will default to the environment variable `HOST` if not set.
+    /// If called outside of a build script, it will default to the target architecture.
     pub fn host(&mut self, host: &str) -> &mut Build {
         self.host = Some(host.to_string());
         self
     }
 
+    /// Enables or disables Lua 5.2 limited compatibility mode.
     pub fn lua52compat(&mut self, enabled: bool) -> &mut Build {
         self.lua52compat = enabled;
         self
@@ -59,6 +73,7 @@ impl Build {
         }
     }
 
+    /// Builds the LuaJIT artifacts.
     pub fn build(&mut self) -> Artifacts {
         let target = &self.target.as_ref().expect("TARGET is not set")[..];
 
@@ -279,14 +294,20 @@ fn cp_r(src: &Path, dst: &Path) {
 }
 
 impl Artifacts {
+    /// Returns the directory containing the LuaJIT libraries.
     pub fn lib_dir(&self) -> &Path {
         &self.lib_dir
     }
 
+    /// Returns the names of the LuaJIT libraries built.
     pub fn libs(&self) -> &[String] {
         &self.libs
     }
 
+    /// Prints the necessary Cargo metadata for linking the LuaJIT libraries.
+    ///
+    /// This method is typically called in a build script to inform Cargo
+    /// about the location of the LuaJIT libraries and how to link them.
     pub fn print_cargo_metadata(&self) {
         println!("cargo:rerun-if-env-changed=HOST_CC");
         println!("cargo:rerun-if-env-changed=STATIC_CC");
