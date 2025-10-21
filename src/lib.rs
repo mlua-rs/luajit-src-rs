@@ -270,6 +270,10 @@ impl Build {
 
         let mut msvcbuild = Command::new(build_dir.join("src").join("msvcbuild.bat"));
         msvcbuild.current_dir(build_dir.join("src"));
+
+        if self.debug.unwrap_or(cfg!(debug_assertions)) {
+            msvcbuild.arg("debug");
+        }
         if self.lua52compat {
             msvcbuild.arg("lua52compat");
         }
