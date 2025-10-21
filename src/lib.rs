@@ -208,7 +208,6 @@ impl Build {
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR is not set");
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let source_dir = manifest_dir.join("luajit2");
-        let extras_dir = manifest_dir.join("extras");
         let build_dir = out_dir.join("luajit-build");
 
         // Cleanup
@@ -226,8 +225,7 @@ impl Build {
         let mut msvcbuild = Command::new(build_dir.join("src").join("msvcbuild.bat"));
         msvcbuild.current_dir(build_dir.join("src"));
         if self.lua52compat {
-            cp_r(&extras_dir, &build_dir.join("src"));
-            msvcbuild.arg("lua52c");
+            msvcbuild.arg("lua52compat");
         }
         msvcbuild.arg("static");
 
