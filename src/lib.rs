@@ -106,7 +106,7 @@ impl Build {
 
         match target {
             "x86_64-apple-darwin" if env::var_os("MACOSX_DEPLOYMENT_TARGET").is_none() => {
-                make.env("MACOSX_DEPLOYMENT_TARGET", "10.11");
+                make.env("MACOSX_DEPLOYMENT_TARGET", "10.14");
             }
             "aarch64-apple-darwin" if env::var_os("MACOSX_DEPLOYMENT_TARGET").is_none() => {
                 make.env("MACOSX_DEPLOYMENT_TARGET", "11.0");
