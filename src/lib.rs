@@ -13,6 +13,7 @@ pub struct Build {
 
 /// Represents the artifacts produced by the build process.
 pub struct Artifacts {
+    include_dir: PathBuf,
     lib_dir: PathBuf,
     libs: Vec<String>,
 }
@@ -91,13 +92,18 @@ impl Build {
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let source_dir = manifest_dir.join("luajit2");
         let build_dir = out_dir.join("luajit-build");
+        let lib_dir = out_dir.join("lib");
+        let include_dir = out_dir.join("include");
 
         // Cleanup
-        if build_dir.exists() {
-            fs::remove_dir_all(&build_dir).unwrap();
+        for dir in [&build_dir, &lib_dir, &include_dir] {
+            if dir.exists() {
+                fs::remove_dir_all(dir)
+                    .unwrap_or_else(|e| panic!("cannot remove {}: {e}", dir.display()));
+            }
+            fs::create_dir_all(dir)
+                .unwrap_or_else(|e| panic!("cannot create {}: {e}", dir.display()));
         }
-        fs::create_dir_all(&build_dir)
-            .unwrap_or_else(|e| panic!("cannot create {}: {}", build_dir.display(), e));
         cp_r(&source_dir, &build_dir);
 
         // Copy release version file
@@ -212,10 +218,7 @@ impl Build {
         make.env("XCFLAGS", xcflags.join(" "));
         self.run_command(make, "building LuaJIT");
 
-        Artifacts {
-            lib_dir: build_dir.join("src"),
-            libs: vec!["luajit".to_string()],
-        }
+        Artifacts::make(&build_dir, &include_dir, &lib_dir, false)
     }
 
     fn build_msvc(&mut self) -> Artifacts {
@@ -224,13 +227,18 @@ impl Build {
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
         let source_dir = manifest_dir.join("luajit2");
         let build_dir = out_dir.join("luajit-build");
+        let lib_dir = out_dir.join("lib");
+        let include_dir = out_dir.join("include");
 
         // Cleanup
-        if build_dir.exists() {
-            fs::remove_dir_all(&build_dir).unwrap();
+        for dir in [&build_dir, &lib_dir, &include_dir] {
+            if dir.exists() {
+                fs::remove_dir_all(dir)
+                    .unwrap_or_else(|e| panic!("cannot remove {}: {e}", dir.display()));
+            }
+            fs::create_dir_all(dir)
+                .unwrap_or_else(|e| panic!("cannot create {}: {e}", dir.display()));
         }
-        fs::create_dir_all(&build_dir)
-            .unwrap_or_else(|e| panic!("cannot create {}: {}", build_dir.display(), e));
         cp_r(&source_dir, &build_dir);
 
         // Copy release version file
@@ -251,10 +259,7 @@ impl Build {
 
         self.run_command(msvcbuild, "building LuaJIT");
 
-        Artifacts {
-            lib_dir: build_dir.join("src"),
-            libs: vec!["lua51".to_string()],
-        }
+        Artifacts::make(&build_dir, &include_dir, &lib_dir, true)
     }
 
     fn run_command(&self, mut command: Command, desc: &str) {
@@ -294,6 +299,11 @@ fn cp_r(src: &Path, dst: &Path) {
 }
 
 impl Artifacts {
+    /// Returns the directory containing the LuaJIT headers.
+    pub fn include_dir(&self) -> &Path {
+        &self.include_dir
+    }
+
     /// Returns the directory containing the LuaJIT libraries.
     pub fn lib_dir(&self) -> &Path {
         &self.lib_dir
@@ -319,6 +329,24 @@ impl Artifacts {
         println!("cargo:rustc-link-search=native={}", self.lib_dir.display());
         for lib in self.libs.iter() {
             println!("cargo:rustc-link-lib=static={lib}");
+        }
+    }
+
+    fn make(build_dir: &Path, include_dir: &Path, lib_dir: &Path, is_msvc: bool) -> Self {
+        for f in &["lauxlib.h", "lua.h", "luaconf.h", "luajit.h", "lualib.h"] {
+            fs::copy(build_dir.join("src").join(f), include_dir.join(f)).unwrap();
+        }
+
+        let lib_name = if !is_msvc { "luajit" } else { "lua51" };
+        let lib_file = if !is_msvc { "libluajit.a" } else { "lua51.lib" };
+        if build_dir.join("src").join(lib_file).exists() {
+            fs::copy(build_dir.join("src").join(lib_file), lib_dir.join(lib_file)).unwrap();
+        }
+
+        Artifacts {
+            lib_dir: lib_dir.to_path_buf(),
+            include_dir: include_dir.to_path_buf(),
+            libs: vec![lib_name.to_string()],
         }
     }
 }
