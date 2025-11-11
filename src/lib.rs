@@ -272,7 +272,6 @@ impl Build {
         msvcbuild.current_dir(build_dir.join("src"));
 
         if self.lua52compat {
-            cp_r(&manifest_dir.join("extras"), &build_dir.join("src"))?;
             msvcbuild.arg("lua52compat");
         }
         if self.debug.unwrap_or(cfg!(debug_assertions)) {
