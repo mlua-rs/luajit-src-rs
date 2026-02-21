@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{env, fs, io};
@@ -127,11 +128,12 @@ impl Build {
         // Copy release version file
         let relver = build_dir.join(".relver");
         fs::copy(manifest_dir.join("luajit_relver.txt"), &relver)
-            .context(|| format!("Cannot copy 'luajit_relver.txt'"))?;
+            .context(|| "Cannot copy 'luajit_relver.txt'")?;
 
         // Fix permissions for certain build situations
         let mut perms = (fs::metadata(&relver).map(|md| md.permissions()))
             .context(|| format!("Cannot read permissions for '{}'", relver.display()))?;
+        #[allow(clippy::permissions_set_readonly_false)]
         perms.set_readonly(false);
         fs::set_permissions(&relver, perms)
             .context(|| format!("Cannot set permissions for '{}'", relver.display()))?;
@@ -266,7 +268,7 @@ impl Build {
         // Copy release version file
         let relver = build_dir.join(".relver");
         fs::copy(manifest_dir.join("luajit_relver.txt"), &relver)
-            .context(|| format!("Cannot copy 'luajit_relver.txt'"))?;
+            .context(|| "Cannot copy 'luajit_relver.txt'")?;
 
         let mut msvcbuild = Command::new(build_dir.join("src").join("msvcbuild.bat"));
         msvcbuild.current_dir(build_dir.join("src"));
@@ -389,11 +391,11 @@ impl Artifacts {
 }
 
 trait ErrorContext<T> {
-    fn context(self, f: impl FnOnce() -> String) -> Result<T, DynError>;
+    fn context<D: Display>(self, f: impl FnOnce() -> D) -> Result<T, DynError>;
 }
 
 impl<T, E: Error> ErrorContext<T> for Result<T, E> {
-    fn context(self, f: impl FnOnce() -> String) -> Result<T, DynError> {
+    fn context<D: Display>(self, f: impl FnOnce() -> D) -> Result<T, DynError> {
         self.map_err(|e| format!("{}: {e}", f()).into())
     }
 }
