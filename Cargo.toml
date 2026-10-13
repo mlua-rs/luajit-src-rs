@@ -10,10 +10,13 @@ license = "MIT"
 description = """
 Sources of LuaJIT 2.1 and logic to build it.
 """
-exclude = ["/luajit2/doc", "/luajit2/etc"]
+exclude = ["/luajit2/doc", "/luajit2/etc", "/luajit2-openresty/doc", "/luajit2-openresty/etc", "/luajit2-openresty/t"]
 
 [workspace]
 members = ["testcrate"]
+
+[features]
+openresty = []
 
 [dependencies]
 cc = "1.2"

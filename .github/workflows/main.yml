@@ -94,6 +94,8 @@ jobs:
         run: |
           cargo test --manifest-path testcrate/Cargo.toml --release
           cargo test --manifest-path testcrate/Cargo.toml --release --features lua52compat
+          cargo test --manifest-path testcrate/Cargo.toml --release --features openresty
+          cargo test --manifest-path testcrate/Cargo.toml --release --features openresty,lua52compat
         shell: bash
 
   rustfmt:

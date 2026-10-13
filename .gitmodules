@@ -2,3 +2,7 @@
 	path = luajit2
 	url = https://github.com/LuaJIT/LuaJIT.git
 	branch = v2.1
+[submodule "luajit2-openresty"]
+	path = luajit2-openresty
+	url = https://github.com/openresty/luajit2.git
+	branch = v2.1-agentzh

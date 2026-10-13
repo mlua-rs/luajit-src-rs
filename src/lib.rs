@@ -22,6 +22,26 @@ pub struct Artifacts {
     libs: Vec<String>,
 }
 
+#[cfg(feature = "openresty")]
+fn source_dir(manifest_dir: &Path) -> PathBuf {
+    manifest_dir.join("luajit2-openresty")
+}
+
+#[cfg(not(feature = "openresty"))]
+fn source_dir(manifest_dir: &Path) -> PathBuf {
+    manifest_dir.join("luajit2")
+}
+
+#[cfg(feature = "openresty")]
+fn relver_file(manifest_dir: &Path) -> PathBuf {
+    manifest_dir.join("luajit_relver_openresty.txt")
+}
+
+#[cfg(not(feature = "openresty"))]
+fn relver_file(manifest_dir: &Path) -> PathBuf {
+    manifest_dir.join("luajit_relver.txt")
+}
+
 impl Default for Build {
     fn default() -> Self {
         Build {
@@ -111,7 +131,7 @@ impl Build {
         let host = &self.host.as_ref().expect("HOST is not set")[..];
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR is not set");
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let source_dir = manifest_dir.join("luajit2");
+        let source_dir = source_dir(manifest_dir);
         let build_dir = out_dir.join("luajit-build");
         let lib_dir = out_dir.join("lib");
         let include_dir = out_dir.join("include");
@@ -127,8 +147,9 @@ impl Build {
 
         // Copy release version file
         let relver = build_dir.join(".relver");
-        fs::copy(manifest_dir.join("luajit_relver.txt"), &relver)
-            .context(|| "Cannot copy 'luajit_relver.txt'")?;
+        let relver_src = relver_file(manifest_dir);
+        fs::copy(&relver_src, &relver)
+            .context(|| format!("Cannot copy release version file from '{}'", relver_src.display()))?;
 
         // Fix permissions for certain build situations
         let mut perms = (fs::metadata(&relver).map(|md| md.permissions()))
@@ -237,6 +258,10 @@ impl Build {
             make.env("CCDEBUG", "-g");
             xcflags.push("-DLUA_USE_ASSERT");
             xcflags.push("-DLUA_USE_APICHECK");
+        } else if cfg!(feature = "openresty") {
+            // Override OpenResty's default CCDEBUG=-g to ensure release builds
+            // don't include debug symbols, matching vanilla LuaJIT behavior
+            make.env("CCDEBUG", "");
         }
 
         make.env("BUILDMODE", "static");
@@ -251,7 +276,7 @@ impl Build {
         let target = &self.target.as_ref().expect("TARGET is not set")[..];
         let out_dir = self.out_dir.as_ref().expect("OUT_DIR is not set");
         let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
-        let source_dir = manifest_dir.join("luajit2");
+        let source_dir = source_dir(manifest_dir);
         let build_dir = out_dir.join("luajit-build");
         let lib_dir = out_dir.join("lib");
         let include_dir = out_dir.join("include");
@@ -267,8 +292,9 @@ impl Build {
 
         // Copy release version file
         let relver = build_dir.join(".relver");
-        fs::copy(manifest_dir.join("luajit_relver.txt"), &relver)
-            .context(|| "Cannot copy 'luajit_relver.txt'")?;
+        let relver_src = relver_file(manifest_dir);
+        fs::copy(&relver_src, &relver)
+            .context(|| format!("Cannot copy release version file from '{}'", relver_src.display()))?;
 
         let mut msvcbuild = Command::new(build_dir.join("src").join("msvcbuild.bat"));
         msvcbuild.current_dir(build_dir.join("src"));
